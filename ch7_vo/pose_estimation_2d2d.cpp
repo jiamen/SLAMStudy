@@ -69,12 +69,12 @@ int main( int argc, char* *argv )
     int i = 0;
     for( DMatch m : matches )
     {
-        Point2d pt1 = pixel2cam( keypoints_1[ m.queryIdx ].pt, K );
-        Mat y1 = ( Mat_<double> (3,1) << pt1.x, pt1.y, 1 );
+        Point2d pt1 = pixel2cam( keypoints_1[ m.queryIdx ].pt, K );      // 像素坐标转归一化坐标
+        Mat y1 = ( Mat_<double> (3,1) << pt1.x, pt1.y, 1 );   // 得到特征点的归一化坐标
         Point2d pt2 = pixel2cam( keypoints_2[ m.trainIdx ].pt, K );
         Mat y2 = ( Mat_<double> (3,1) << pt2.x, pt2.y, 1 );
-        Mat d = y2.t() * t_x * R * y1;
-        cout << "i: " << ++i << " epipolar constraint = " << d << endl;      // 输出対极约束
+        Mat d = y2.t() * t_x * R * y1;                  // 《SLAM》 P143页 7.9式（3）
+        cout << "i: " << ++ i << " epipolar constraint = " << d << endl;      // 输出対极约束
     }
 
     return 0;
@@ -171,15 +171,15 @@ void pose_estimation_2d2d( std::vector<KeyPoint> keypoints_1,
     cout << "fundamental_matrix is " << endl << fundamental_matrix << endl;
 
 
-    // 计算本质矩阵 ：根据相机坐标系下的 坐标 计算，需要像素坐标转换
-    Point2d principal_point(325.1, 249.7);      // 相机光心， TUM dataset标定值
+    // 计算本质矩阵 ：根据 相机坐标系 下的 坐标 计算，需要像素坐标转换
+    Point2d principal_point(325.1, 249.7);        // 相机光心， TUM dataset标定值，内参矩阵K中的cx和cy
     double focal_length = 521;                          // 相机焦距， TUM dataset标定值
     Mat essential_matrix;
     essential_matrix = findEssentialMat( points1, points2, focal_length, principal_point );
     cout << "essential_matrix is " << endl << essential_matrix << endl;
 
 
-    // 计算单应矩阵
+    // 计算单应矩阵：单应矩阵描述处于共同平面上的一些点在两张图像之间的变换关系
     Mat homography_matrix;
     homography_matrix = findHomography( points1, points2, RANSAC, 3 );
     cout << "homography_matrix is " << endl << homography_matrix << endl;
