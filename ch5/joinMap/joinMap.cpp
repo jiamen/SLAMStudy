@@ -39,11 +39,11 @@ int main(int argc, char* *argv)
         for ( auto& d:data )                  // 读取一行数据，读7个
             fin >> d;
 
-        // 四元数
+        // 由读取到的旋转四元数和平移向量，变换为变换矩阵T_wc
         Eigen::Quaterniond q(data[6], data[3], data[4], data[5]);
         Eigen::Isometry3d T(q);
         T.pretranslate( Eigen::Vector3d(data[0], data[1], data[2]) );
-        poses.push_back( T );
+        poses.push_back( T );                   // T_wc
     }
 
     // 计算点云并拼接
