@@ -100,12 +100,12 @@ void triangulation(
     Mat T1 = (Mat_<float>(3,4) <<
         1, 0, 0, 0,
         0, 1, 0, 0,
-        0, 0, 1, 0);
+        0, 0, 1, 0);       // 恢复出的空间点 本来 就在相机1坐标系下
     Mat T2 = (Mat_<float> (3,4) <<
         R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
         R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
         R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
-    );
+    );      // 增广矩阵，恢复出的空间点转换到相机2坐标系下的变换矩阵
 
     Mat K = (Mat_<double> (3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
     vector<Point2f> pts_1, pts_2;
