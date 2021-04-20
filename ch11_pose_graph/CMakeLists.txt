@@ -19,6 +19,7 @@ include_directories( ${Sophus_INCLUDE_DIRS} )
 # g2o
 find_package( G2O REQUIRED )
 include_directories( ${G2O_INCLUDE_DIRS} )
+SET(G2O_LIBS g2o_cli g2o_ext_freeglut_minimal g2o_simulator g2o_solver_slam2d_linear g2o_types_icp g2o_types_slam2d g2o_core g2o_interface g2o_solver_csparse g2o_solver_structure_only g2o_types_sba g2o_types_slam3d g2o_csparse_extension g2o_opengl_helper g2o_solver_dense g2o_stuff g2o_types_sclam2d g2o_parser g2o_solver_pcg g2o_types_data g2o_types_sim3 cxsparse )
 
 find_package( Cholmod REQUIRED )
 # include_directories( ${CHOLMOD_INCLUDE_DIRS} )    这里DIRS多了个S，所以程序是错的
@@ -36,7 +37,9 @@ include_directories( ${CERES_INCLUDE_DIR} )
 
 add_executable( pose_graph_g2o_SE3 pose_graph_g2o_SE3.cpp )
 target_link_libraries( pose_graph_g2o_SE3
-        g2o_core g2o_stuff g2o_types_slam3d ${CHOLMOD_LIBRARIES}
+        # g2o_core g2o_stuff g2o_types_slam3d
+        ${G2O_LIBS}
+        ${CHOLMOD_LIBRARIES}
         )
 
 
