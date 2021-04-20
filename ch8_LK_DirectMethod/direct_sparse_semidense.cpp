@@ -284,16 +284,19 @@ int main(int argc, char* *argv)
 
     Eigen::Isometry3d Tcw = Eigen::Isometry3d::Identity();      // 定义变换矩阵
 
-    cv::Mat prev_color;
+    cv::Mat prev_color;         // 只用来记录第一张图片
 
     // 我们以第一个图像为参考，对后续图像和参考图像做直接法 ，每一副图像 都会与第一帧图像做直接法计算第一帧到当前帧的RT 但是经过更多的帧后 关键点的数量会减少，
     // 所以实际应用时 应当规定关键点的数量少于多少 就该从新设定参考系，再次利用直接法 ，但是会累计的误差需要解决？？？？
-    for (int index=0; index<10; index ++)
+    for (int index=0; index<9; index ++)
     {
-        cout << "*********** loop " << index << " ***********" << endl;
+        cout << "*********** loop " << index << " *****begin******" << endl;
         fin >> time_rgb >> rgb_file >> time_depth >> depth_file;
         color = cv::imread(path_to_dataset + "/" + rgb_file);
         depth = cv::imread(path_to_dataset + "/" + depth_file, -1);
+	// flags = -1：imread按解码得到的方式读入图像
+	// flags = 0：imread按单通道的方式读入图像，即灰白图像 
+	// flags = 1：imread按三通道方式读入图像，即彩色图像
         if ( nullptr==color.data || nullptr==depth.data )
             continue;
 
@@ -333,26 +336,26 @@ int main(int argc, char* *argv)
 #endif
                 measurements.push_back( Measurement ( p3d, grayscale ) );
             }
-            prev_color = color.clone();
+            prev_color = color.clone();     // 只用来记录第一张照片
             continue;
         }
 
         // 使用直接法计算相机运动，从第二帧开始计算相机位姿g2o优化
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
-        poseEstimationDirect( measurements, &gray, K, Tcw );                // 重中之重，最重要的一个函数
+        poseEstimationDirect( measurements, &gray, K, Tcw );                // 重中之重，最重要的一个函数，
 
         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
         chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>> (t2-t1);
         cout << "direct method costs time: " << time_used.count() << " seconds." << endl;
-        cout << "Tcw = " << Tcw.matrix() << endl;
+        cout << "Tcw = " << endl << Tcw.matrix() << endl;
 
 
         // plot the feature points
         cv::Mat img_show (color.rows*2, color.cols, CV_8UC3);       // 目的是为了之后对比前后两帧图像的关键点数量 所以建立一个可以存储pre_color 和color 大小的矩阵
         // 拼接两幅图片
-        prev_color.copyTo( img_show(cv::Rect(0, 0, color.cols, color.rows)) );
-        color.copyTo ( img_show(cv::Rect(0, color.rows, color.cols, color.rows)) );
+        prev_color.copyTo( img_show(cv::Rect(0, 0, color.cols, color.rows)) );          // 第一张照片拷贝到拼接图img_show的上方
+        color.copyTo ( img_show(cv::Rect(0, color.rows, color.cols, color.rows)) );         // 移动的剩下9张图拼接到图img_show的下方
         // Rect(参数)表示坐标0,0 到cols,rows 那么大的矩形
         for ( Measurement m:measurements )
         {
@@ -361,7 +364,7 @@ int main(int argc, char* *argv)
             Eigen::Vector3d p = m.pos_world;            // 3D相机坐标系（第一帧 默认也是世界帧）
             Eigen::Vector2d pixel_prev = project3Dto2D ( p(0,0), p(1,0), p(2,0), fx, fy, cx, cy );
 
-            Eigen::Vector3d p2 = Tcw * m.pos_world;
+            Eigen::Vector3d p2 = Tcw * m.pos_world;     // 当前帧坐标系
             Eigen::Vector2d pixel_now  = project3Dto2D ( p2(0,0), p2(1,0), p2(2,0), fx, fy, cx, cy );
             // 对于超出当前帧图像像素坐标轴范围的点 舍弃不画
             // 前两项判断是横坐标（X）的u判断，后两项是纵坐标（Y）的判断
@@ -383,7 +386,9 @@ int main(int argc, char* *argv)
 
         cv::imshow("result", img_show);
         cv::waitKey( 0 );
+        cout << "*********** loop " << index << " *****end******" << endl;
     }
+
 
     return 0;
 }
@@ -392,17 +397,19 @@ int main(int argc, char* *argv)
 bool poseEstimationDirect ( const vector< Measurement >& measurements, cv::Mat* gray, Eigen::Matrix3f& K, Eigen::Isometry3d& Tcw )
 {
     // 初始化g2o
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;  // 求解的向量是6＊1的
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;      // 求解的向量是6＊1的， 优化的是相机位姿
     DirectBlock::LinearSolverType* linearSolver = new g2o::LinearSolverDense< DirectBlock::PoseMatrixType > ();
     DirectBlock* solver_ptr = new DirectBlock ( linearSolver );
     // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr ); // G-N
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr ); // L-M
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );       // L-M  首先确定损失函数F(x+△x)使用哪种方法进行近似，或者说选定哪种非线性方程最优化方法
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm ( solver );
-    optimizer.setVerbose( true );
+    optimizer.setVerbose( false );
 
+
+    // 设置第0个顶点
     g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
-    pose->setEstimate ( g2o::SE3Quat ( Tcw.rotation(), Tcw.translation() ) );
+    pose->setEstimate ( g2o::SE3Quat ( Tcw.rotation(), Tcw.translation() ) );   // 设置Tcw变换位姿初值
     pose->setId ( 0 );
     optimizer.addVertex ( pose );
 
@@ -416,7 +423,7 @@ bool poseEstimationDirect ( const vector< Measurement >& measurements, cv::Mat* 
         );
         edge->setVertex ( 0, pose );
         edge->setMeasurement ( m.grayscale );
-        edge->setInformation ( Eigen::Matrix<double,1,1>::Identity() );
+        edge->setInformation ( Eigen::Matrix<double, 1, 1>::Identity() );
         edge->setId ( id++ );
         optimizer.addEdge ( edge );
     }
