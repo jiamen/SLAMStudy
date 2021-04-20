@@ -111,7 +111,7 @@ int main(int argc, char* *argv)
         CurveFittingEdge* edge = new CurveFittingEdge( x_data[i] );
         edge->setId(i);
         edge->setVertex(0, v);                // 设置连接的顶点
-        edge->setMeasurement( y_data[i] );      // 观测数值
+        edge->setMeasurement( y_data[i] );       // 观测数值
         edge->setInformation( Eigen::Matrix<double,1,1>::Identity() * 1/(w_sigma*w_sigma) );    // 信息矩阵：协方差矩阵之逆
         optimizer.addEdge( edge );
     }
