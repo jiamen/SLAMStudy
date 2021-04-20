@@ -26,7 +26,12 @@ int main( int argc, char* *argv )
     // 初始化
     std::vector<KeyPoint> keypoints_1, keypoints_2;
     Mat descriptors_1, descriptors_2;
-    Ptr<FeatureDetector> detector = ORB::create();
+    // Ptr<FeatureDetector> detector = ORB::create();   // 这么写也可以
+    Ptr<ORB> detector = ORB::create( 500, 1.2f, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 20 );
+    /*
+     * CV_WRAP static Ptr<ORB> create( int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31,
+                                       int firstLevel=0,  int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31, int fastThreshold=20);
+     * */
     Ptr<DescriptorExtractor> descriptor = ORB::create();
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
 
