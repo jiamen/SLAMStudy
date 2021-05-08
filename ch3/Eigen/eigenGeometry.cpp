@@ -54,6 +54,17 @@ int main(int argc, char* *argv)
 
 
     // 对于仿射和射影变换，使用Eigen::Affine3d和Eigen::Projective3d 即可，略
+    // 仿射变换Affine3d 和 射影变换Projective3d
+    cout << endl << "********************仿射变换Affine3d和射影变换Projective3d**************************" << endl;
+    Eigen::Affine3d Aff = Eigen::Affine3d::Identity();
+    Aff.rotate(rotation_vector);
+    Aff.pretranslate(Eigen::Vector3d(1, 3, 4));     // 平移
+    cout << "Affine matrix = " << endl << Aff.matrix() << endl;
+
+    Eigen::Projective3d Pro = Eigen::Projective3d::Identity();
+    Pro.rotate(rotation_vector);
+    Pro.pretranslate(Eigen::Vector3d(1,3,4));
+    cout << "Projective matrix = " << endl << Pro.matrix() << endl;
 
 
     // 四元数
@@ -66,8 +77,10 @@ int main(int argc, char* *argv)
     cout << "quaternion = \n" << q.coeffs().transpose() << endl;
 
     // 使用四元数旋转一个向量，使用重载的乘法即可
-    v_rotated = q*v;                // 注意数学上是qvq^(-1)
+    v_rotated = q * v;                // 注意数学上是qvq^(-1)
     cout << "(1,0,0) after rotation = " << v_rotated.transpose() << endl;
+    cout << "用数学方法表述 = q * quaterniond(0,1,0,0) * q(-1) = " << (q*Eigen::Quaterniond(0,1,0,0)*q.inverse()).coeffs().transpose() << endl;
+
 
     return 0;
 }

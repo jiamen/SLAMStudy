@@ -86,10 +86,37 @@ int main(int argc, char* *argv)
     // 特征值
     // 实对称矩阵可以保证对角化成功
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver ( matrix_33.transpose()*matrix_33 );
-    cout << "Eigen values = \n" << eigen_solver.eigenvalues() << endl;
+    cout << "Eigen values = \n"  << eigen_solver.eigenvalues()  << endl;
     cout << "Eigen vectors = \n" << eigen_solver.eigenvectors() << endl;
 
 
+    cout << "*********************************************" << endl;
+    // 解方程
+    // matrix_NN*x = v_Nd;      Ax = b, 其中A=LL^T
+    // N 50
+    // using 2 methods to solve linear equation
+    //     1、to get inverse directly
+    //     2、using QR 分解
+    Eigen::Matrix<double, MATRIX_SIZE, MATRIX_SIZE> matrix_NN = Eigen::MatrixXd::Random();
+    matrix_NN = matrix_NN * matrix_NN.transpose();          // 保证半正定   https://zhuanlan.zhihu.com/p/44860862
+    Eigen::Matrix<double, MATRIX_SIZE, 1> v_Nd = Eigen::MatrixXd::Random();        // 随机的向量
+
+    clock_t time_stt = clock();
+    Eigen::Matrix<double, MATRIX_SIZE, 1> x = matrix_NN.inverse() * v_Nd;
+
+    cout << "time of normal inverse is " << 1000 * (clock()-time_stt)/(double)CLOCKS_PER_SEC << "ms" << endl;
+    cout << "x = " << endl << x.transpose() << endl;
+
+    // 用cholesky 分解decomposition
+    // matrix_NN * x = v_Nd
+    // x = matrix_NN.colPivHouseholderQr().solve(v_Nd);
+    cout << "*********************************************" << endl;
+    time_stt = clock();
+    x = matrix_NN.ldlt().solve(v_Nd);
+    cout << "time of normal inverse is "
+         << 1000 * (clock()-time_stt) / (double)CLOCKS_PER_SEC << "ms" << endl;
+
+    cout << "x = " << endl << x.transpose() << endl;
 
     return 0;
 }
