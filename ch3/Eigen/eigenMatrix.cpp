@@ -112,7 +112,10 @@ int main(int argc, char* *argv)
     // x = matrix_NN.colPivHouseholderQr().solve(v_Nd);
     cout << "*********************************************" << endl;
     time_stt = clock();
+    // 选择求解方式
     x = matrix_NN.ldlt().solve(v_Nd);
+    // x = matrix_NN.llt().solve(v_Nd);
+
     cout << "time of normal inverse is "
          << 1000 * (clock()-time_stt) / (double)CLOCKS_PER_SEC << "ms" << endl;
 
