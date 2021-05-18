@@ -53,7 +53,7 @@ int main(int argc, char* *argv)
     // 对SE3(3)操作大同小异
     Eigen::Vector3d t(1,0,0);       // 沿x轴平移1
     Sophus::SE3 SE3_Rt(R, t);                // 从R，t构造SE3(3)
-    Sophus::SE3 SE3_qt(q, t);               // 从q，t构造SE(3)
+    Sophus::SE3 SE3_qt(q, t);                // 从q，t构造SE(3)
     cout << "SE3 from R, t = " << endl << SE3_Rt << endl;
     cout << "SE3 from q, t = " << endl << SE3_qt << endl;
     // SE3 from R, t =
