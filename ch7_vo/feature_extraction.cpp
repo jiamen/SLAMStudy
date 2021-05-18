@@ -54,7 +54,9 @@ int main( int argc, char* *argv )
 
     // 第三步：对两幅图像中的BRIEF描述子进行匹配，使Hamming距离
     vector<DMatch> matches;
-    matcher->match( descriptors_1, descriptors_2, matches );
+    // BFMatcher bfMatcher(NORM_HAMMING, true);
+    // bfMatcher.match(descriptors_1, descriptors_2, matches);
+    matcher->match( descriptors_1, descriptors_2, matches );     // 原代码
 
 
     // 第四步：匹配点对筛选

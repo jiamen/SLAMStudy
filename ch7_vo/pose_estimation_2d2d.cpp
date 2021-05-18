@@ -166,8 +166,15 @@ void pose_estimation_2d2d( std::vector<KeyPoint> keypoints_1,
     // imgIdx : 有争议(常为0)
 
     // 计算基础矩阵：基础矩阵是根据 像素坐标系 下的像素直接计算
+    //! the algorithm for finding fundamental matrix
+    //  enum { FM_7POINT = 1, //!< 7-point algorithm
+    //       FM_8POINT = 2, //!< 8-point algorithm
+    //       FM_LMEDS  = 4, //!< least-median algorithm. 7-point algorithm is used.
+    //       FM_RANSAC = 8  //!< RANSAC algorithm. It needs at least 15 points. 7-point algorithm is used.
+    //       };
     Mat fundamental_matrix;
-    fundamental_matrix = findFundamentalMat( points1, points2, CV_FM_8POINT );
+    fundamental_matrix = findFundamentalMat( points1, points2, CV_FM_8POINT );      // FM_RANSAC
+    // fundamental_matrix = findFundamentalMat( points1, points2, FM_RANSAC );
     cout << "fundamental_matrix is " << endl << fundamental_matrix << endl;
 
 
