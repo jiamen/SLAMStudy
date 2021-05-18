@@ -231,8 +231,12 @@ void pose_estimation_2d2d (
 }
 
 
+// 面试必问：
 Point2f pixel2cam ( const Point2d& p, const Mat& K )
 {
+    // 这里是得到像极坐标系下的空间点的归一化坐标 (X/Z),(Y/Z)
+    // u = f_x (X/Z) + c_x
+    // v = f_y (Y/Z) + c_y
     return Point2f
             (
                     ( p.x - K.at<double>(0,2) ) / K.at<double>(0,0),
