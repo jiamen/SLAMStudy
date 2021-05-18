@@ -235,7 +235,7 @@ void pose_estimation_3d3d(
         const vector<Point3f>& pts2,
         Mat& R, Mat& t)
 {
-    Point3f p1, p2;             // center of mass  质心
+    Point3f p1, p2;                     // center of mass  质心
     int N = pts1.size();
 
     for(int i=0; i<N; i ++)
@@ -264,10 +264,10 @@ void pose_estimation_3d3d(
 
     // SVD on W
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(W, Eigen::ComputeFullU | Eigen::ComputeThinV);
-    Eigen::Matrix3d U = svd.matrixU();
-    Eigen::Matrix3d V = svd.matrixV();
+    Eigen::Matrix3d U = svd.matrixU();      // 得到U矩阵
+    Eigen::Matrix3d V = svd.matrixV();      // 得到V矩阵
 
-    // 第2帧到第1帧的变换，与PnP中第1
+    // 第2帧到第1帧的变换，与PnP中第1    determinant行列式
     if( U.determinant() * V.determinant() < 0 )
     {
         for(int x=0; x < 3; x ++)
@@ -280,7 +280,7 @@ void pose_estimation_3d3d(
     cout << "V = " << V << endl;
 
     Eigen::Matrix3d R_ = U * (V.transpose());
-    Eigen::Vector3d t_ = Eigen::Vector3d( p1.x, p1.y, p1.z ) - R_ * Eigen::Vector3d(p2.x, p2.y, p2.z);
+    Eigen::Vector3d t_ = Eigen::Vector3d( p1.x, p1.y, p1.z ) - R_ * Eigen::Vector3d(p2.x, p2.y, p2.z);      // P174页 式7.53 t* = p - R p'
 
 
     // convert to cv::Mat 将矩阵和向量统一转换为转换为Mat矩阵形式
