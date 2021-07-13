@@ -80,6 +80,7 @@ int main(int argc, char* *argv)
     float depth_scale = get_depth_scale(dev);
     cout <<  " depth_scale: " << depth_scale << endl;       //  depth_scale: 0.001
 
+
     // start stream
     pipe.start(cfg);    // 指示管道使用所请求的配置启动流
 
@@ -107,10 +108,10 @@ int main(int argc, char* *argv)
         // Gyro: -0.0034311, 4.02672e-06, 1.23899e-06
 
         // Get each frame
-        rs2::frame color_frame = frames.get_color_frame();
-        rs2::frame depth_frame = frames.get_depth_frame();
-        rs2::video_frame ir_frame_left  = frames.get_infrared_frame(1);
-        rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
+        rs2::frame color_frame = frames.get_color_frame();                      // 得到彩色帧
+        rs2::frame depth_frame = frames.get_depth_frame();                      // 得到深度帧
+        rs2::video_frame ir_frame_left  = frames.get_infrared_frame(1);     // 得到左图
+        rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);     // 得到右图
 
 
         // Creating OpenCV Matrix from a color image
