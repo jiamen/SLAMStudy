@@ -18,7 +18,15 @@ find_package(realsense2 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${realsense2_INCLUDE_DIRS})
 
-add_executable(alldata GetAlldata.cpp)
 
+add_executable(alldata GetAlldata.cpp)
 target_link_libraries(alldata ${OpenCV_LIBS} ${realsense2_LIBRARY})
+
+
+# 添加后可以进行调试
+set( CMAKE_BUILD_TYPE Debug )
+set(DEPENDENCIES realsense2 )
+
+add_executable(measure_distance measure_distance.cpp)
+target_link_libraries(measure_distance ${DEPENDENCIES} ${OpenCV_LIBS})
 
