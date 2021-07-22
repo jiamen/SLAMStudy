@@ -15,6 +15,7 @@
 #include <g2o/core/base_unary_edge.h>       // 自写的class EigenProjectXYZRGBDPoseOnly继承自这个类
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_gauss_newton.h>
+#include <g2o/core/optimization_algorithm_levenberg.h>
 #include <g2o/solvers/eigen/linear_solver_eigen.h>
 #include <g2o/types/sba/types_six_dof_expmap.h>
 #include <chrono>
@@ -186,6 +187,7 @@ void bundleAdjustment(
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>();    // 线性方程求解器
     Block* solver_ptr = new Block( linearSolver );                  // 矩阵块求解器
     g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr );
+
     g2o::SparseOptimizer optimizer;                                 // 图模型
     optimizer.setAlgorithm( solver );                               // 设置求解器
 

@@ -15,9 +15,13 @@
 #include <g2o/core/base_unary_edge.h>
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
+#include <g2o/core/optimization_algorithm_dogleg.h>
+#include <g2o/core/optimization_algorithm_gauss_newton.h>
+
 #include <g2o/solvers/csparse/linear_solver_csparse.h>
 #include <g2o/types/sba/types_six_dof_expmap.h>
 #include <chrono>
+
 
 using namespace std;
 using namespace cv;
@@ -167,17 +171,27 @@ void bundleAdjustment (
         const Mat& K,
         Mat& R, Mat& t )
 {
-    // 初始化g2o
+    // 第0步：初始化g2o
     typedef g2o::BlockSolver< g2o::BlockSolverTraits<6,3> > Block;  // pose维度为6，landmark维度为3
+
+    // 第1步：创建一个线性求解器LinearSolver
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();    // 线性方程求解器
 
-    Block* solver_ptr = new Block ( linearSolver );             // 矩阵块求解器
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    // 第2步：创建BlockSolver，并用上面定义的线性求解器初始化
+    Block* solver_ptr = new Block( std::unique_ptr<Block::LinearSolverType>(linearSolver) );
+    // Block* solver_ptr = new Block ( linearSolver );             // 矩阵块求解器
+
+    // 第3步：创建总求解器solver，并从GN，LM，Dogleg中选一个，再用上述块求解器BlockSolver初始化
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(std::unique_ptr<Block>(solver_ptr));
+    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+
+    // 第4步：创建稀疏优化器
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm( solver );                           // ☆☆☆ 设置优化算法，使用那种方法定义非线性优化的下降策略 △△△
 
+    // 第5步：添加顶点和边
     // vertex
-    g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();    // camera pose，李代数位姿节点
+    g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();    // camera pose，g2o原生李代数位姿节点
     Eigen::Matrix3d R_mat;      // 注意CV中的矩阵与Eigen中的矩阵相互转换
     R_mat <<
             R.at<double> (0,0), R.at<double> (0,1), R.at<double> (0,2),
