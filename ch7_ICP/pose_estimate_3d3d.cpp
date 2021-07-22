@@ -182,12 +182,21 @@ void bundleAdjustment(
     const vector<Point3f>& pts2,
     Mat& R, Mat& t )
 {
-    // 初始化g2o
+    // 第0步：初始化g2o
     typedef g2o::BlockSolver< g2o::BlockSolverTraits<6,3> > Block;  // pose维度为6， landmark维度为3
-    Block::LinearSolverType* linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>();    // 线性方程求解器
-    Block* solver_ptr = new Block( linearSolver );                  // 矩阵块求解器
-    g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr );
 
+    // 第1步：创建一个线性求解器LinearSolver
+    Block::LinearSolverType* linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>();    // 线性方程求解器
+
+    // 第2步：创建BlockSolver，并用上面定义的线性求解器初始化
+    Block* solver_ptr = new Block( std::unique_ptr<Block::LinearSolverType>(linearSolver) );
+    // Block* solver_ptr = new Block( linearSolver );                  // 矩阵块求解器
+
+    // 第3步：创建总求解器solver，并从GN，LM，Dogleg中选一个，再用上述块求解器BlockSolver初始化
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(std::unique_ptr<Block>(solver_ptr));
+    // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr );
+
+    // 第4步：创建稀疏优化器
     g2o::SparseOptimizer optimizer;                                 // 图模型
     optimizer.setAlgorithm( solver );                               // 设置求解器
 
