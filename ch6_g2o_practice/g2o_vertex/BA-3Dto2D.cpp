@@ -105,12 +105,12 @@ void bundleAdjustment (
     // 第1步：创建一个线性求解器LinearSolver
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();
     // 第2步：创建BlockSolver。并用上面定义的线性求解器初始化
-    // Block* solver_ptr = new Block (  std::unique_ptr<Block::LinearSolverType>(linearSolver) );
-    Block* solver_ptr = new Block ( linearSolver );
+    Block* solver_ptr = new Block (  std::unique_ptr<Block::LinearSolverType>(linearSolver) );
+    // Block* solver_ptr = new Block ( linearSolver );
 
     // 第3步：创建总求解器solver。并从GN, LM, DogLeg 中选一个，再用上述块求解器BlockSolver初始化
-    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( std::unique_ptr<Block>(solver_ptr) );
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( std::unique_ptr<Block>(solver_ptr) );
+    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );
 
     // 第4步：创建稀疏优化器
     g2o::SparseOptimizer optimizer;
