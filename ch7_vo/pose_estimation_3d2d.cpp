@@ -63,7 +63,7 @@ int main(int argc, char* *argv)
     Mat K = (Mat_<double>(3,3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
     vector<Point3f> pts_3d;
     vector<Point2f> pts_2d;
-    for ( DMatch m : matches )
+    for ( DMatch m:matches )
     {
         // 在深度图上找到图像1上关键点相应的深度点
         ushort d = d1.ptr<unsigned short> (int (keypoints_1[m.queryIdx].pt.y)) [ int (keypoints_1[m.queryIdx].pt.x) ];
@@ -81,11 +81,7 @@ int main(int argc, char* *argv)
     // 这里使用旋转向量和平移向量的形式
     Mat r, t;
     // 调用openCV的PnP求解，可选择EPNP，DLS等方法
-    // solvePnP( pts_3d, pts_2d, K, Mat(), r, t, false, cv::SOLVEPNP_EPNP );
-    cv::Mat inliers;
-    cv::solvePnPRansac( pts_3d, pts_2d, K, cv::Mat(), r, t, false, 100, 1.0, 0.99, inliers );
-
-
+    solvePnP( pts_3d, pts_2d, K, Mat(), r, t, false, cv::SOLVEPNP_EPNP );
     Mat R;
     cv::Rodrigues( r, R );      // r为旋转向量形式，用Rodrigues公式转换为矩阵，其实就是李代数向李群的指数映射转换
 
@@ -172,7 +168,7 @@ void bundleAdjustment (
         Mat& R, Mat& t )
 {
     // 初始化g2o
-    typedef g2o::BlockSolver< g2o::BlockSolverTraits<6, 3> > Block;  // pose维度为6，landmark维度为3
+    typedef g2o::BlockSolver< g2o::BlockSolverTraits<6,3> > Block;  // pose维度为6，landmark维度为3
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>();    // 线性方程求解器
 
     Block* solver_ptr = new Block ( linearSolver );             // 矩阵块求解器
@@ -188,7 +184,7 @@ void bundleAdjustment (
             R.at<double> (1,0), R.at<double> (1,1), R.at<double> (1,2),
             R.at<double> (2,0), R.at<double> (2,1), R.at<double> (2,2);
 
-    pose->setId(0);         // 待优化相机变换 序号
+    pose->setId(0);
     pose->setEstimate( g2o::SE3Quat(
                                 R_mat,
                                 Eigen::Vector3d( t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0) )

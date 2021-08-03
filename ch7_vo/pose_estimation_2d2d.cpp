@@ -5,6 +5,7 @@
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/flann.hpp>
 #include <opencv2/highgui/highgui.hpp>
 // 本模块为跨平台的gui/IO组件，支持平台包括windows,linux,mac,IOS,android，
 // 可支持图像/视频/摄像头的读取显示以及转码。
@@ -13,6 +14,7 @@
 
 using namespace std;
 using namespace cv;
+
 
 /* 本程序演示如何使用2D-2D的特征匹配估计相机运动 */
 
@@ -59,7 +61,7 @@ int main( int argc, char* *argv )
 
     // 验证E=t^R*scale  P65页反对称矩阵变换
     Mat t_x = ( Mat_<double>(3, 3) <<
-                0,                          -t.at<double>(2,0),  t.at<double>(1,0),
+                0,                         -t.at<double>(2,0),  t.at<double>(1,0),
                 t.at<double>(2,0),   0,                         -t.at<double>(0,0),
                 -t.at<double>(1,0),  t.at<double>(0,0),   0);
     cout << "t^R = " << endl << t_x*R << endl;
@@ -86,15 +88,20 @@ void find_feature_matches ( const Mat& img_1, const Mat& img_2,
                             std::vector<KeyPoint>& keypoints_2,
                             std::vector< DMatch >& matches )
 {
-    //-- 1、初始化
+    //-- 1、初始化：创建匹配描述子，特征点向量，
     Mat descriptors_1, descriptors_2;
     // used in OpenCV3
     Ptr<FeatureDetector> detector = ORB::create();
     Ptr<DescriptorExtractor> descriptor = ORB::create();
-    // use this if you are in OpenCV2
-    // Ptr<FeatureDetector> detector = FeatureDetector::create ( "ORB" );
+    // Ptr<FeatureDetector> detector = FeatureDetector::create ( "ORB" );       // use this if you are in OpenCV2
     // Ptr<DescriptorExtractor> descriptor = DescriptorExtractor::create ( "ORB" );
-    Ptr<DescriptorMatcher> matcher  = DescriptorMatcher::create ( "BruteForce-Hamming" );
+
+    // 选择匹配方法
+    // Ptr<DescriptorMatcher> matcher  = DescriptorMatcher::create ( "BruteForce-Hamming" );
+    // Ptr<DescriptorMatcher> matcher = makePtr<FlannBasedMatcher>(makePtr<flann::LshIndexParams>(12, 20, 2));
+    // FlannBasedMatcher matcher;
+    cv::FlannBasedMatcher matcher(new cv::flann::LshIndexParams(20, 10, 2));
+
     //-- 2、检测 Oriented FAST 角点位置
     detector->detect ( img_1,keypoints_1 );
     detector->detect ( img_2,keypoints_2 );
@@ -103,10 +110,12 @@ void find_feature_matches ( const Mat& img_1, const Mat& img_2,
     descriptor->compute ( img_1, keypoints_1, descriptors_1 );
     descriptor->compute ( img_2, keypoints_2, descriptors_2 );
 
+
     //-- 4、对两幅图像中的BRIEF描述子进行匹配，使用 Hamming 距离
     vector<DMatch> match;
-    //BFMatcher matcher ( NORM_HAMMING );
-    matcher->match ( descriptors_1, descriptors_2, match );
+    // BFMatcher matcher ( NORM_HAMMING );
+    // matcher->match ( descriptors_1, descriptors_2, match );
+    matcher.match ( descriptors_1, descriptors_2, match );
 
     //-- 5、匹配点对筛选
     double min_dist=10000, max_dist=0;

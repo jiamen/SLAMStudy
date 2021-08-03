@@ -294,13 +294,14 @@ int main(int argc, char* *argv)
         fin >> time_rgb >> rgb_file >> time_depth >> depth_file;
         color = cv::imread(path_to_dataset + "/" + rgb_file);
         depth = cv::imread(path_to_dataset + "/" + depth_file, -1);
-	// flags = -1：imread按解码得到的方式读入图像
-	// flags = 0：imread按单通道的方式读入图像，即灰白图像 
-	// flags = 1：imread按三通道方式读入图像，即彩色图像
+        // flags = -1：imread按解码得到的方式读入图像
+        // flags = 0：imread按单通道的方式读入图像，即灰白图像
+        // flags = 1：imread按三通道方式读入图像，即彩色图像
         if ( nullptr==color.data || nullptr==depth.data )
             continue;
 
         cv::cvtColor( color, gray, cv::COLOR_BGR2GRAY );        // 将彩色图转换为灰度图
+
         if ( 0 == index )
         {
             // 对第一帧提取FAST特征点，直接法的思路是根据当前相机的位姿估计值来寻找p2的位置，我们通过优化光度误差来优化位姿，寻找与p1更为相似的p2
@@ -340,7 +341,7 @@ int main(int argc, char* *argv)
             continue;
         }
 
-        // 使用直接法计算相机运动，从第二帧开始计算相机位姿g2o优化
+        // 使用直接法计算相机运动，从第二帧开始计算相机位姿g2o优化，不再提取关键点
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
         poseEstimationDirect( measurements, &gray, K, Tcw );                // 重中之重，最重要的一个函数，
@@ -398,15 +399,22 @@ bool poseEstimationDirect ( const vector< Measurement >& measurements, cv::Mat* 
 {
     // 初始化g2o
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,1>> DirectBlock;      // 求解的向量是6＊1的， 优化的是相机位姿
+    // 第一步：设置线性方程求解器
     DirectBlock::LinearSolverType* linearSolver = new g2o::LinearSolverDense< DirectBlock::PoseMatrixType > ();
-    DirectBlock* solver_ptr = new DirectBlock ( linearSolver );
+    // 第二步：选定块求解器 BlockSolver，选择求解J或者H的方法
+    // DirectBlock* solver_ptr = new DirectBlock ( linearSolver );
+    DirectBlock* solver_ptr = new DirectBlock (  std::unique_ptr<DirectBlock::LinearSolverType>(linearSolver) );
+    // 第三步：选择迭代算法，是GN、LM还是DogLeg
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( std::unique_ptr<DirectBlock>(solver_ptr) );
     // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr ); // G-N
-    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );       // L-M  首先确定损失函数F(x+△x)使用哪种方法进行近似，或者说选定哪种非线性方程最优化方法
+    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg ( solver_ptr );       // L-M  首先确定损失函数F(x+△x)使用哪种方法进行近似，或者说选定哪种非线性方程最优化方法
+
+    // 第四步：创建稀疏优化器
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm ( solver );
     optimizer.setVerbose( false );
 
-
+    // 第五步：设置顶点和边
     // 设置第0个顶点
     g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
     pose->setEstimate ( g2o::SE3Quat ( Tcw.rotation(), Tcw.translation() ) );   // 设置Tcw变换位姿初值
@@ -428,6 +436,9 @@ bool poseEstimationDirect ( const vector< Measurement >& measurements, cv::Mat* 
         optimizer.addEdge ( edge );
     }
     cout<<"edges in graph: "<<optimizer.edges().size() <<endl;
+
+
+    // 第六步：开始优化
     optimizer.initializeOptimization();
     optimizer.optimize ( 30 );
     Tcw = pose->estimate();
