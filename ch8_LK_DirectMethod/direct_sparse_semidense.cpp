@@ -177,7 +177,7 @@ public:
         }
     }
 
-    // 第二步：计算雅克比矩阵， 计算eplus in manifold
+    // 第二步：计算雅克比矩阵， 计算 eplus in manifold
     // 提供误差关于位姿的雅克比矩阵 书上8.16式子 只不过负号去掉了 因为用的是当前帧灰度值 - 世界坐标下的测量值
     virtual void linearizeOplus( ) override
     {
@@ -218,8 +218,8 @@ public:
 
         Eigen::Matrix<double, 1, 2> jacobian_pixel_uv;
 
-        //书上I2对像素坐标系的偏导数  这里很有可能 计算出来的梯度为0  因为FAST角点的梯度没有限制
-        //这也是半稠密法主要改进的地方 就是选关键点的时候 选择梯度大的点 因此这里的梯度就不可能为0了
+        // 书上I2对像素坐标系的偏导数  这里很有可能 计算出来的梯度为0  因为FAST角点的梯度没有限制
+        // 这也是半稠密法主要改进的地方 就是选关键点的时候 选择梯度大的点 因此这里的梯度就不可能为0了
         jacobian_pixel_uv ( 0,0 ) = ( getPixelValue ( u+1,v )-getPixelValue ( u-1,v ) ) /2;
         jacobian_pixel_uv ( 0,1 ) = ( getPixelValue ( u,v+1 )-getPixelValue ( u,v-1 ) ) /2;
 
@@ -431,8 +431,8 @@ bool poseEstimationDirect ( const vector< Measurement >& measurements, cv::Mat* 
         );
         edge->setVertex ( 0, pose );
         edge->setMeasurement ( m.grayscale );
-        edge->setInformation ( Eigen::Matrix<double, 1, 1>::Identity() );
-        edge->setId ( id++ );
+        edge->setInformation ( Eigen::Matrix<double, 1, 1>::Identity() );   // 信息矩阵维度是1，由残差维度决定，残差维度是一维的灰度Ip
+        edge->setId ( id ++ );
         optimizer.addEdge ( edge );
     }
     cout<<"edges in graph: "<<optimizer.edges().size() <<endl;

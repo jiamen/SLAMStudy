@@ -524,28 +524,29 @@ public:
 
 // TODO edge of projection error, implement it
 // 16x1 error, which is the errors in patch
-typedef Eigen::Matrix<double,16,1> Vector16d;
-class EdgeDirectProjection : public g2o::BaseBinaryEdge<16, Vector16d, g2o::VertexSBAPointXYZ, VertexSophus> {
+typedef Eigen::Matrix<double, 16, 1> Vector16d;
+class EdgeDirectProjection : public g2o::BaseBinaryEdge<16, Vector16d, g2o::VertexSBAPointXYZ, VertexSophus>
+{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    EdgeDirectProjection(float *color, cv::Mat &target) {
+    EdgeDirectProjection(float *color, cv::Mat &target)
+    {
         this->origColor = color;
         this->targetImg = target;
         this->w = targetImg.cols;
         this->h = targetImg.rows;
-
     }
 
     ~EdgeDirectProjection() {}
 
-    virtual void computeError() override {
-
+    virtual void computeError() override
+    {
         // ----------------  开始你的代码 ----------------------//
         // 参考十四讲中直接法BA部分
 
         // 1. 跟据当前顶点估计, 计算相机坐标系下坐标
-        const VertexSophus * v = static_cast<const VertexSophus*>(_vertices[1]);
+        const VertexSophus* v = static_cast<const VertexSophus*>(_vertices[1]);
         const VertexSBAPointXYZ* p = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
         Eigen::Vector3d x_local = v->estimate() * p->estimate();
 
@@ -575,7 +576,7 @@ public:
     // 下面函数不用自己写了，但是要能看懂
     virtual void linearizeOplus() override
     {
-        if(level()==1)
+        if(level() == 1)
         {
             _jacobianOplusXi = Matrix<double,16,3>::Zero();
             _jacobianOplusXj = Matrix<double,16,6>::Zero();
@@ -620,8 +621,8 @@ public:
 
         // 像素梯度
         Matrix<double,1,2> J_I_Puv;
-        for(int i = -2; i<2; i++)
-            for(int j = -2; j<2; j++) {
+        for(int i = -2; i<2; i ++)
+            for(int j = -2; j<2; j ++) {
                 int num = 4 * i + j + 10;
                 J_I_Puv(0,0) = (GetPixelValue(targetImg,u+i+1,v+j) - GetPixelValue(targetImg,u+i-1,v+j))/2;
                 J_I_Puv(0,1) = (GetPixelValue(targetImg,u+i,v+j+1) - GetPixelValue(targetImg,u+i,v+j-1))/2;
@@ -632,6 +633,7 @@ public:
                 _jacobianOplusXj.block<1,6>(num,0) = -J_I_Puv * J_Puv_Pc * J_Pc_kesi;
             }
     }
+
     virtual bool read(istream &in) {}
 
     virtual bool write(ostream &out) const {}
@@ -692,7 +694,6 @@ int main(int argc, char **argv)
 
     cout << "poses!!!!!!!!!!!!: " << endl;
 
-    cout << "poses!!!!!!!!!!!!: " << endl;
 
     cout << "poses: " << poses.size() << ", points: " << points.size() << ", color: "<<color.size()<<endl;
 
@@ -733,8 +734,8 @@ int main(int argc, char **argv)
     // ----------------  开始你的代码 ----------------------//
     // 参考十四讲中直接法BA部分
 
-    // 1. 每一个点是一个顶点
-    for(int i = 0; i < points.size(); i++) {
+    // 1. 每一个路标点是一个顶点
+    for(int i = 0; i < points.size(); i ++) {
         VertexSBAPointXYZ* vertexPw = new VertexSBAPointXYZ();
         vertexPw->setEstimate(points[i]);
         vertexPw->setId(i);
@@ -743,7 +744,7 @@ int main(int argc, char **argv)
     }
 
     // 2. 每一个位姿是一个顶点
-    for(int j = 0; j < poses.size(); j++) {
+    for(int j = 0; j < poses.size(); j ++) {
         VertexSophus* vertexTcw = new VertexSophus();
         vertexTcw->setEstimate(poses[j]);
         vertexTcw->setId(j + points.size());
@@ -751,18 +752,23 @@ int main(int argc, char **argv)
     }
 
     // 3. 添加边
-    for(int c = 0; c < poses.size(); c++)
-        for(int p = 0; p < points.size(); p++) {
+    for(int c = 0; c < poses.size(); c ++)
+    {
+        for(int p = 0; p < points.size(); p ++)
+        {
             EdgeDirectProjection* edge = new EdgeDirectProjection(color[p],images[c]);
             edge->setVertex(0, dynamic_cast<VertexSBAPointXYZ*>(optimizer.vertex(p)));
-            edge->setVertex(1,dynamic_cast<VertexSophus*>(optimizer.vertex(c+points.size())));
-            edge->setInformation(Matrix<double,16,16>::Identity());
+            edge->setVertex(1,dynamic_cast<VertexSophus*>(optimizer.vertex(c + points.size())));
+
+            // 信息矩阵维度由残差维度决定
+            edge->setInformation(Matrix<double, 16, 16>::Identity());   // 这里的维度注意看目标函数，目标函数是4×4窗口,16个值的1维残差，因此这里是16
+
             RobustKernelHuber* rk = new RobustKernelHuber;
             rk->setDelta(1.0);
             edge->setRobustKernel(rk);
             optimizer.addEdge(edge);
         }
-
+    }
     // ----------------  结束你的代码 ----------------------//
 
     // 第6步：执行优化
@@ -770,14 +776,21 @@ int main(int argc, char **argv)
     optimizer.optimize(200);
 
     // 从optimizer中获取结果
-    for(int c = 0; c < poses.size(); c++)
-        for(int p = 0; p < points.size(); p++) {
-            Vector3d Pw = dynamic_cast<VertexSBAPointXYZ*>(optimizer.vertex(p))->estimate();
+    for(int c = 0; c < poses.size(); c ++)
+    {
+        for(int p = 0; p < points.size(); p ++)
+        {
+            Vector3d Pw = dynamic_cast<VertexSBAPointXYZ*>(optimizer.vertex(p))->estimate();    // 获得空间点优化点
             points[p] = Pw;
-            SE3 Tcw = dynamic_cast<VertexSophus*>(optimizer.vertex(c + points.size()))->estimate();
-            poses[c] = Tcw;
         }
+        SE3 Tcw = dynamic_cast<VertexSophus*>(optimizer.vertex(c + points.size()))->estimate(); // 获得位姿优化点
+        poses[c] = Tcw;
+    }
 
+    for (int c = 0; c<poses.size(); c ++)
+    {
+        cout << "poses[" << c << "]:" << endl << poses[c] << endl;
+    }
 
     // plot the optimized points and poses
     Draw(poses, points);

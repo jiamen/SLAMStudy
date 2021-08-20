@@ -37,7 +37,9 @@ int main(int argc, char* *argv)
         return 1;
     }
 
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> Block; // 6×6 BlockSolver
+
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> Block;   // 6×6 BlockSolver
+    //
     Block::LinearSolverType* linearSolver = new g2o::LinearSolverCholmod<Block::PoseMatrixType>();  // 线性方程求解器
 
     Block* solver_ptr = new Block(linearSolver);    // 矩阵块求解器
